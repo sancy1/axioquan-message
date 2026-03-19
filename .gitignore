@@ -57,3 +57,16 @@ desktop.ini
 *.pem
 *.key
 *.cert
+
+# ── Security ──────────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+gen.js
+
+# ── Personal / Local files ────────────────────────────────────────────────────
+Note.txt
+education.jpg
+Messag_API_Build_Plan.docx
+*.docx
+*.pdf
