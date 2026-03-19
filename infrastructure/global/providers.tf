@@ -1,0 +1,13 @@
+
+// infrastructure/global/providers.tf
+
+terraform {
+  required_version = ">= 1.5.0"
+
+  required_providers {
+    render = {
+      source  = "render-oss/render"
+      version = "~> 1.3"
+    }
+  }
+}

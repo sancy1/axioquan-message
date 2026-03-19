@@ -1,0 +1,23 @@
+
+## infrastructure/environments/dev/terraform.tfvars.example
+
+# ── Copy this file to terraform.tfvars for local runs ─────────────────────────
+# For Spacelift runs — set all values as workspace variables in Spacelift UI
+# NEVER commit terraform.tfvars to git
+
+# ── Render ────────────────────────────────────────────────────────────────────
+render_owner_id  = "tea-cv3cvdt2ng1s73fues2g"
+
+# ── GitHub ────────────────────────────────────────────────────────────────────
+github_owner     = "sancy1"
+github_repo_name = "axioquan-message"
+
+# ── App ───────────────────────────────────────────────────────────────────────
+project_name = "messag"
+environment  = "dev"
+cors_origin  = "https://axio-prod-dev.onrender.com"
+
+# ── Secrets (set in Spacelift — never paste real values here) ─────────────────
+# render_api_key = set in Spacelift workspace variables → sensitive
+# database_url   = set in Spacelift workspace variables → sensitive
+# jwt_secret     = set in Spacelift workspace variables → sensitive

@@ -1,17 +1,17 @@
 
-name: Deploy to Render (Prod)
+name: Deploy to Render (Dev)
 on:
   push:
-    branches: [prod]
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Prod Deploy
+      - name: Trigger Render Dev Deploy
         run: |
           curl -X POST \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_PROD_SERVICE_ID }}/deploys" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_DEV_SERVICE_ID }}/deploys" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"clearCache": false}'
