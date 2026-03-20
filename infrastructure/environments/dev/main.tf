@@ -12,13 +12,19 @@ terraform {
   }
 }
 
-# ── Neon module — reads database_url from Spacelift variable ──────────────────
+# ── Provider configuration — must be in root module ───────────────────────────
+provider "render" {
+  api_key  = var.render_api_key
+  owner_id = var.render_owner_id
+}
+
+# ── Neon module ───────────────────────────────────────────────────────────────
 module "neon" {
   source       = "../../modules/neon"
   database_url = var.database_url
 }
 
-# ── Render module — creates the API web service ───────────────────────────────
+# ── Render module ─────────────────────────────────────────────────────────────
 module "render" {
   source = "../../modules/render"
 

@@ -21,6 +21,9 @@ build/
 **/.terraform.lock.hcl
 terraform.log
 crash.log
+.terraform/
+.terraform
+
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs/

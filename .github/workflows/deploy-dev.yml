@@ -1,14 +1,68 @@
-
 name: Deploy to Render (Dev)
+
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    name: Build, Test and Deploy to Render
+
     steps:
-      - name: Trigger Render Dev Deploy
+      # ── Step 1: Checkout Code ───────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Step 2: Setup Node.js ───────────────────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── Step 3: Cache Dependencies ──────────────────────────────────────────
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      # ── Step 4: Install Dependencies ────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Step 5: Typecheck ────────────────────────────────────────────────────
+      - name: Typecheck
+        run: npm run typecheck
+
+      # ── Step 6: Run Tests ────────────────────────────────────────────────────
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PORT: 3001
+          APP_NAME: messag-test
+          CORS_ORIGIN: http://localhost:3000
+          WS_ENABLED: "true"
+          RATE_LIMIT_MAX: "100"
+          RATE_LIMIT_WINDOW: "60000"
+          LOG_LEVEL: silent
+
+      # ── Step 7: Build TypeScript ─────────────────────────────────────────────
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      # ── Step 8: Deploy to Render ─────────────────────────────────────────────
+      - name: Trigger Render Deploy
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           curl -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_DEV_SERVICE_ID }}/deploys" \

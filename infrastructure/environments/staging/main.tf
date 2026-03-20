@@ -13,6 +13,11 @@ terraform {
   }
 }
 
+provider "render" {
+  api_key  = var.render_api_key
+  owner_id = var.render_owner_id
+}
+
 module "neon" {
   source       = "../../modules/neon"
   database_url = var.database_url

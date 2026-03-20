@@ -1,5 +1,5 @@
-
 name: Deploy to Render (Staging)
+
 on:
   push:
     branches: [staging]
@@ -7,7 +7,50 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    name: Build, Test and Deploy to Staging
+
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PORT: 3001
+          APP_NAME: messag-test
+          CORS_ORIGIN: http://localhost:3000
+          WS_ENABLED: "true"
+          RATE_LIMIT_MAX: "100"
+          RATE_LIMIT_WINDOW: "60000"
+          LOG_LEVEL: silent
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
       - name: Trigger Render Staging Deploy
         run: |
           curl -X POST \
