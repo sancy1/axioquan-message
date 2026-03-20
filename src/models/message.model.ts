@@ -1,8 +1,6 @@
 
 // src/models/message.model.ts
 
-import { MessageStatus } from '../constants/messageStatus.js'
-
 export interface Message {
   id: string
   conversation_id: string

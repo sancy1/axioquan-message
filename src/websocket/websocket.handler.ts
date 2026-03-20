@@ -6,7 +6,6 @@ import type { WebSocket } from '@fastify/websocket'
 import {
   registerConnection,
   removeConnection,
-  sendToUser,
 } from './websocket.manager.js'
 import { logger } from '../utils/logger.js'
 
