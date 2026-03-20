@@ -7,11 +7,16 @@
 # For local runs outside Spacelift, comment this out and use:
 #   terraform init -backend=false
 
-terraform {
-  backend "remote" {
-    organization = "axioquan"
-    workspaces {
-      name = "messag-dev"
-    }
-  }
-}
+# terraform {
+#   backend "remote" {
+#     organization = "axioquan"
+#     workspaces {
+#       name = "messag-dev"
+#     }
+#   }
+# }
+
+
+# ── Backend managed by Spacelift ──────────────────────────────────────────────
+# Spacelift automatically configures the backend and manages state.
+# Do NOT add a backend block here — Spacelift injects its own.
