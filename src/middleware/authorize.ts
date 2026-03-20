@@ -7,7 +7,7 @@ import { HttpError } from '../errors/HttpError.js'
 export function authorize(...allowedRoles: string[]) {
   return async (
     request: FastifyRequest,
-    reply: FastifyReply
+    _reply: FastifyReply
   ): Promise<void> => {
     const user = request.user
 
