@@ -191,11 +191,11 @@
 
 
 
-
 // tests/integration/conversations.test.ts
 // FIXED: Tests create their own conversation in beforeAll
 // No longer depends on hardcoded conversation ID from Postman test data
 // Cleans up created conversation in afterAll
+// DEBUG: added raw error logger to expose 500 cause
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import Fastify from 'fastify'
@@ -211,13 +211,13 @@ const STUDENT_ID    = '5bed31bb-959c-4a24-8f76-30ba4c80fe87'
 const INSTRUCTOR_ID = '18477825-b6b4-42ff-8367-b5e9c1343989'
 const ADMIN_ID      = 'f3b44460-3472-42c2-af38-cfd10a6dd739'
 
-let app:              FastifyInstance
-let studentToken:     string
-let instructorToken:  string
+let app:               FastifyInstance
+let studentToken:      string
+let instructorToken:   string
 let testConversationId: string
 
 beforeAll(async () => {
-  // ── Boot Fastify ────────────────────────────────────────────────────────────
+  // ── Boot Fastify ──────────────────────────────────────────────────────────
   app = Fastify({ logger: false })
   await app.register(corsPlugin)
   await app.register(jwtPlugin)
@@ -225,7 +225,7 @@ beforeAll(async () => {
   app.setErrorHandler(errorHandler)
   await app.ready()
 
-  // ── Generate tokens ─────────────────────────────────────────────────────────
+  // ── Generate tokens ───────────────────────────────────────────────────────
   studentToken = app.jwt.sign({
     userId: STUDENT_ID,
     email:  'williams1@test.com',
@@ -238,8 +238,7 @@ beforeAll(async () => {
     role:   'instructor',
   })
 
-  // ── Create a test conversation directly in DB ────────────────────────────────
-  // This guarantees the conversation exists regardless of prior test runs
+  // ── Create a test conversation directly in DB ─────────────────────────────
   const convRows = await sql`
     INSERT INTO conversations (type, title, created_by)
     VALUES ('direct', 'Integration test conversation', ${STUDENT_ID})
@@ -258,15 +257,29 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  // ── Clean up test data ───────────────────────────────────────────────────────
+  // ── Clean up in correct FK order ──────────────────────────────────────────
   if (testConversationId) {
-    await sql`DELETE FROM message_read_receipts  WHERE conversation_id = ${testConversationId}`
-    await sql`DELETE FROM message_notifications  WHERE conversation_id = ${testConversationId}`
-    await sql`DELETE FROM direct_messages        WHERE conversation_id = ${testConversationId}`
+    await sql`DELETE FROM message_read_receipts    WHERE conversation_id = ${testConversationId}`
+    await sql`DELETE FROM message_notifications    WHERE conversation_id = ${testConversationId}`
+    await sql`DELETE FROM direct_messages          WHERE conversation_id = ${testConversationId}`
     await sql`DELETE FROM conversation_participants WHERE conversation_id = ${testConversationId}`
-    await sql`DELETE FROM conversations          WHERE id = ${testConversationId}`
+    await sql`DELETE FROM conversations            WHERE id = ${testConversationId}`
   }
   await app.close()
+})
+
+// ── DEBUG: expose real 500 error body ─────────────────────────────────────────
+// Remove this test once the 500 is fixed
+it('DEBUG — raw GET /api/conversations error body', async () => {
+  const response = await app.inject({
+    method:  'GET',
+    url:     '/api/conversations',
+    headers: { authorization: `Bearer ${studentToken}` },
+  })
+  console.log('DEBUG status:', response.statusCode)
+  console.log('DEBUG body:',   response.body)
+  // Always passes — we just want to see the output
+  expect(response.statusCode).toBeDefined()
 })
 
 describe('Conversations API — Integration', () => {
@@ -355,7 +368,6 @@ describe('Conversations API — Integration', () => {
           participantIds: [INSTRUCTOR_ID],
         }),
       })
-      // 200 = existing conversation returned, 201 = new one created
       expect([200, 201]).toContain(response.statusCode)
       const body = JSON.parse(response.body)
       expect(body.success).toBe(true)
