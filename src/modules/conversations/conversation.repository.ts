@@ -29,47 +29,96 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   // ── Find all conversations for a user (inbox) ───────────────────────────────
-  async findByUserId(
-    userId: string,
-    pagination: PaginationParams
-  ): Promise<ConversationWithParticipant[]> {
-    const { limit, page } = pagination
-    const offset = (page - 1) * limit
+  // async findByUserId(
+  //   userId: string,
+  //   pagination: PaginationParams
+  // ): Promise<ConversationWithParticipant[]> {
+  //   const { limit, page } = pagination
+  //   const offset = (page - 1) * limit
 
-    const rows = await sql`
-      SELECT
-        c.id,
-        c.type,
-        c.title,
-        c.course_id,
-        c.created_by,
-        c.last_message_at,
-        c.created_at,
-        c.updated_at,
-        cp.role           AS my_role,
-        cp.last_read_at,
-        cp2.user_id       AS other_participant_id,
-        u.username        AS other_participant_username,
-        u.name            AS other_participant_name,
-        u.image           AS other_participant_image,
-        dm.message        AS last_message_preview
-      FROM conversations c
-      JOIN conversation_participants cp
-        ON cp.conversation_id = c.id
-        AND cp.user_id = ${userId}
-      JOIN conversation_participants cp2
-        ON cp2.conversation_id = c.id
-        AND cp2.user_id != ${userId}
-      JOIN users u
-        ON u.id = cp2.user_id
-      LEFT JOIN direct_messages dm
-        ON dm.conversation_id = c.id
-        AND dm.created_at = c.last_message_at
-      ORDER BY c.last_message_at DESC NULLS LAST
-      LIMIT ${limit} OFFSET ${offset}
-    `
-    return rows.map((row) => this.mapRowWithParticipant(row))
-  }
+  //   const rows = await sql`
+  //     SELECT
+  //       c.id,
+  //       c.type,
+  //       c.title,
+  //       c.course_id,
+  //       c.created_by,
+  //       c.last_message_at,
+  //       c.created_at,
+  //       c.updated_at,
+  //       cp.role           AS my_role,
+  //       cp.last_read_at,
+  //       cp2.user_id       AS other_participant_id,
+  //       u.username        AS other_participant_username,
+  //       u.name            AS other_participant_name,
+  //       u.image           AS other_participant_image,
+  //       dm.message        AS last_message_preview
+  //     FROM conversations c
+  //     JOIN conversation_participants cp
+  //       ON cp.conversation_id = c.id
+  //       AND cp.user_id = ${userId}
+  //     JOIN conversation_participants cp2
+  //       ON cp2.conversation_id = c.id
+  //       AND cp2.user_id != ${userId}
+  //     JOIN users u
+  //       ON u.id = cp2.user_id
+  //     LEFT JOIN direct_messages dm
+  //       ON dm.conversation_id = c.id
+  //       AND dm.created_at = c.last_message_at
+  //     ORDER BY c.last_message_at DESC NULLS LAST
+  //     LIMIT ${limit} OFFSET ${offset}
+  //   `
+  //   return rows.map((row) => this.mapRowWithParticipant(row))
+  // }
+
+
+
+  async findByUserId(
+  userId: string,
+  pagination: PaginationParams
+): Promise<ConversationWithParticipant[]> {
+  const { limit, page } = pagination
+  const offset = (page - 1) * limit
+
+  const rows = await sql`
+    SELECT DISTINCT ON (c.id)
+      c.id,
+      c.type,
+      c.title,
+      c.course_id,
+      c.created_by,
+      c.last_message_at,
+      c.created_at,
+      c.updated_at,
+      cp.role           AS my_role,
+      cp.last_read_at,
+      cp2.user_id       AS other_participant_id,
+      u.username        AS other_participant_username,
+      u.name            AS other_participant_name,
+      u.image           AS other_participant_image,
+      dm.message        AS last_message_preview
+    FROM conversations c
+    JOIN conversation_participants cp
+      ON cp.conversation_id = c.id
+      AND cp.user_id = ${userId}
+    JOIN conversation_participants cp2
+      ON cp2.conversation_id = c.id
+      AND cp2.user_id != ${userId}
+    JOIN users u
+      ON u.id = cp2.user_id
+    LEFT JOIN direct_messages dm
+      ON dm.conversation_id = c.id
+      AND dm.created_at = (
+        SELECT MAX(created_at)
+        FROM direct_messages
+        WHERE conversation_id = c.id
+      )
+    ORDER BY c.id, c.last_message_at DESC NULLS LAST
+    LIMIT ${limit} OFFSET ${offset}
+  `
+  return rows.map((row) => this.mapRowWithParticipant(row))
+}
+
 
   // ── Count conversations for a user ─────────────────────────────────────────
   async countByUserId(userId: string): Promise<number> {
