@@ -270,17 +270,17 @@ afterAll(async () => {
 
 // ── DEBUG: expose real 500 error body ─────────────────────────────────────────
 // Remove this test once the 500 is fixed
-it('DEBUG — raw GET /api/conversations error body', async () => {
-  const response = await app.inject({
-    method:  'GET',
-    url:     '/api/conversations',
-    headers: { authorization: `Bearer ${studentToken}` },
-  })
-  console.log('DEBUG status:', response.statusCode)
-  console.log('DEBUG body:',   response.body)
-  // Always passes — we just want to see the output
-  expect(response.statusCode).toBeDefined()
-})
+// it('DEBUG — raw GET /api/conversations error body', async () => {
+//   const response = await app.inject({
+//     method:  'GET',
+//     url:     '/api/conversations',
+//     headers: { authorization: `Bearer ${studentToken}` },
+//   })
+//   console.log('DEBUG status:', response.statusCode)
+//   console.log('DEBUG body:',   response.body)
+//   // Always passes — we just want to see the output
+//   expect(response.statusCode).toBeDefined()
+// })
 
 describe('Conversations API — Integration', () => {
 

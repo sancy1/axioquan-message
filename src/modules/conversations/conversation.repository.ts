@@ -364,14 +364,15 @@ export class ConversationRepository implements IConversationRepository {
           AND cp2.user_id != ${userId}
         LIMIT 1
       ) AS other_participant_image,
+      
       (
         SELECT dm.message
         FROM direct_messages dm
         WHERE dm.conversation_id = c.id
-          AND dm.deleted_at IS NULL
         ORDER BY dm.created_at DESC
         LIMIT 1
       ) AS last_message_preview
+
     FROM conversations c
     JOIN conversation_participants cp
       ON cp.conversation_id = c.id
