@@ -315,67 +315,74 @@ export class ConversationRepository implements IConversationRepository {
 
   // ── Find all conversations for a user (inbox) ───────────────────────────────
   async findByUserId(
-    userId: string,
-    pagination: PaginationParams
-  ): Promise<ConversationWithParticipant[]> {
-    const { limit, page } = pagination
-    const offset = (page - 1) * limit
+  userId: string,
+  pagination: PaginationParams
+): Promise<ConversationWithParticipant[]> {
+  const { limit, page } = pagination
+  const offset = (page - 1) * limit
 
-    const rows = await sql`
-      SELECT
-        c.id,
-        c.type,
-        c.title,
-        c.course_id,
-        c.created_by,
-        c.last_message_at,
-        c.created_at,
-        c.updated_at,
-        cp.role             AS my_role,
-        cp.last_read_at,
-        other_p.user_id     AS other_participant_id,
-        other_u.username    AS other_participant_username,
-        other_u.name        AS other_participant_name,
-        other_u.image       AS other_participant_image,
-        preview.message     AS last_message_preview
-      FROM conversations c
-
-      -- My participation record
-      JOIN conversation_participants cp
-        ON cp.conversation_id = c.id
-        AND cp.user_id = ${userId}
-
-      -- Exactly ONE other participant (earliest join)
-      -- LATERAL guarantees no duplicate rows per conversation
-      JOIN LATERAL (
-        SELECT cp3.user_id
-        FROM conversation_participants cp3
-        WHERE cp3.conversation_id = c.id
-          AND cp3.user_id != ${userId}
-        ORDER BY cp3.joined_at ASC
+  const rows = await sql`
+    SELECT
+      c.id,
+      c.type,
+      c.title,
+      c.course_id,
+      c.created_by,
+      c.last_message_at,
+      c.created_at,
+      c.updated_at,
+      cp.role          AS my_role,
+      cp.last_read_at,
+      (
+        SELECT cp2.user_id
+        FROM conversation_participants cp2
+        WHERE cp2.conversation_id = c.id
+          AND cp2.user_id != ${userId}
         LIMIT 1
-      ) other_p ON true
-
-      -- That participant's profile
-      JOIN users other_u
-        ON other_u.id = other_p.user_id
-
-      -- Latest non-deleted message as preview
-      LEFT JOIN LATERAL (
+      ) AS other_participant_id,
+      (
+        SELECT u2.username
+        FROM conversation_participants cp2
+        JOIN users u2 ON u2.id = cp2.user_id
+        WHERE cp2.conversation_id = c.id
+          AND cp2.user_id != ${userId}
+        LIMIT 1
+      ) AS other_participant_username,
+      (
+        SELECT u2.name
+        FROM conversation_participants cp2
+        JOIN users u2 ON u2.id = cp2.user_id
+        WHERE cp2.conversation_id = c.id
+          AND cp2.user_id != ${userId}
+        LIMIT 1
+      ) AS other_participant_name,
+      (
+        SELECT u2.image
+        FROM conversation_participants cp2
+        JOIN users u2 ON u2.id = cp2.user_id
+        WHERE cp2.conversation_id = c.id
+          AND cp2.user_id != ${userId}
+        LIMIT 1
+      ) AS other_participant_image,
+      (
         SELECT dm.message
         FROM direct_messages dm
         WHERE dm.conversation_id = c.id
           AND dm.deleted_at IS NULL
         ORDER BY dm.created_at DESC
         LIMIT 1
-      ) preview ON true
+      ) AS last_message_preview
+    FROM conversations c
+    JOIN conversation_participants cp
+      ON cp.conversation_id = c.id
+      AND cp.user_id = ${userId}
+    ORDER BY c.last_message_at DESC NULLS LAST
+    LIMIT ${limit} OFFSET ${offset}
+  `
 
-      ORDER BY c.last_message_at DESC NULLS LAST
-      LIMIT ${limit} OFFSET ${offset}
-    `
+  return rows.map((row) => this.mapRowWithParticipant(row))
+}
 
-    return rows.map((row) => this.mapRowWithParticipant(row))
-  }
 
   // ── Count conversations for a user ──────────────────────────────────────────
   async countByUserId(userId: string): Promise<number> {

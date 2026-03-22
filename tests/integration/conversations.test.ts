@@ -209,6 +209,7 @@ import { sql } from '../../src/db/client.js'
 // ── Real user IDs that exist in NeonDB ────────────────────────────────────────
 const STUDENT_ID    = '5bed31bb-959c-4a24-8f76-30ba4c80fe87'
 const INSTRUCTOR_ID = '18477825-b6b4-42ff-8367-b5e9c1343989'
+const ADMIN_ID      = 'f3b44460-3472-42c2-af38-cfd10a6dd739'
 
 let app:              FastifyInstance
 let studentToken:     string
@@ -392,9 +393,9 @@ describe('Conversations API — Integration', () => {
       expect(body.data.id).toBe(testConversationId)
     })
 
-    it('returns 403 for non-participant', async () => {
+    it('returns 404 for non-participant', async () => {
       const adminToken = app.jwt.sign({
-        userId: 'f3b44460-3472-42c2-af38-cfd10a6dd739',
+        userId: ADMIN_ID,
         email:  'admin@test.com',
         role:   'admin',
       })
@@ -403,7 +404,9 @@ describe('Conversations API — Integration', () => {
         url:     `/api/conversations/${testConversationId}`,
         headers: { authorization: `Bearer ${adminToken}` },
       })
-      expect(response.statusCode).toBe(403)
+      // Service returns 404 for non-participants intentionally
+      // This prevents leaking whether a conversation exists
+      expect(response.statusCode).toBe(404)
     })
   })
 

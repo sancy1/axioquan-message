@@ -25,21 +25,54 @@ export class ConversationService {
   ) {}
 
   // ── Get user inbox ──────────────────────────────────────────────────────────
-  async getConversations(
-    userId: string,
-    query: { page?: number; limit?: number }
-  ): Promise<{
-    conversations: ConversationWithParticipant[]
-    meta: ReturnType<typeof buildPaginationMeta>
-  }> {
-    const pagination = getPaginationParams(query)
-    const [conversations, total] = await Promise.all([
+  // async getConversations(
+  //   userId: string,
+  //   query: { page?: number; limit?: number }
+  // ): Promise<{
+  //   conversations: ConversationWithParticipant[]
+  //   meta: ReturnType<typeof buildPaginationMeta>
+  // }> {
+  //   const pagination = getPaginationParams(query)
+  //   const [conversations, total] = await Promise.all([
+  //     this.conversationRepo.findByUserId(userId, pagination),
+  //     this.conversationRepo.countByUserId(userId),
+  //   ])
+  //   const meta = buildPaginationMeta(total, pagination.page, pagination.limit)
+  //   return { conversations, meta }
+  // }
+
+
+  // ── Get user inbox ──────────────────────────────────────────────────────────
+async getConversations(
+  userId: string,
+  query: { page?: number; limit?: number }
+): Promise<{
+  conversations: ConversationWithParticipant[]
+  meta: ReturnType<typeof buildPaginationMeta>
+}> {
+  const pagination = getPaginationParams(query)
+
+  let conversations: ConversationWithParticipant[] = []
+  let total = 0
+
+  try {
+    const [convResult, countResult] = await Promise.all([
       this.conversationRepo.findByUserId(userId, pagination),
       this.conversationRepo.countByUserId(userId),
     ])
-    const meta = buildPaginationMeta(total, pagination.page, pagination.limit)
-    return { conversations, meta }
+    conversations = convResult
+    total         = countResult
+  } catch (error: any) {
+    // Log the actual SQL error so we can see it in Render logs
+    logger.error({ err: error, userId }, 'findByUserId failed — SQL error')
+    // Re-throw so we can see the real error in tests
+    throw error
   }
+
+  const meta = buildPaginationMeta(total, pagination.page, pagination.limit)
+  return { conversations, meta }
+}
+
 
   // ── Get single conversation ─────────────────────────────────────────────────
   async getConversationById(
